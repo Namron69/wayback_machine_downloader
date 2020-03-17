@@ -32,31 +32,32 @@ def determine_path_filename_from(url: str) -> tuple:
     return (dst_dir, filename)
 
 
+def save_errors(err):
+    with open("err.json", "a") as f:
+        json.dump(err, f)
+
+
 def download(timestamp, url, dir, filename):
     if not os.path.exists(os.getcwd()+'\\web\\'+dir+'\\'):
         os.makedirs(os.getcwd()+'\\web\\'+dir+'\\')
     if os.path.exists(os.getcwd()+'\\web\\'+dir+'\\'+filename):
         filename = filename.split('.')[0]+'_'+timestamp+'.'+filename.split('.')[1]
     errors = []
+
     try:
-        urllib.request.urlretrieve('http://web.archive.org/web/'+timestamp+'id_/'+url, os.getcwd()+'\\web\\'+dir+'\\'+filename)
+        response = urllib.request.urlopen('http://web.archive.org/web/'+timestamp+'id_/'+url)
     except urllib.error.HTTPError as e:
-        # Return code error (e.g. 404, 501, ...)
-        # ...
-        print('STATUS: HTTPError: {}'.format(e.code))
-        errors.append({'timestamp':timestamp,'url':url,'status':'{}'.format(e.code)})
+        print('STATUS: HTTPError:\ncode: {}'.format(e.code),'\nreaseon: {}'.format(e.reason),'\nheaders:{}'.format(e.headers))
+        errors.append({'timestamp':timestamp,'url':url,'error': 'STATUS: HTTPError: code: {}'.format(e.code)+' reaseon: {}'.format(e.reason)+' headers:{}'.format(e.headers)})
+        save_errors(errors)
     except urllib.error.URLError as e:
-        # Not an HTTP-specific error (e.g. connection refused)
-        # ...
         print('STATUS: URLError: {}'.format(e.reason))
-        errors.append({'timestamp':timestamp,'url':url,'status':'{}'.format(e.code)})
+        errors.append({'timestamp':timestamp,'url':url,'error':'STATUS: URLError: reason: {}'.format(e.reason)})
+        save_errors(errors)
     else:
-        # 200
-        # ...
         print('STATUS: OK')
-    
-    with open("error.txt", "a") as myfile:
-        myfile.write(str(errors))
+        with open('web\\'+dir+'\\'+filename, 'wb') as f:
+            f.write(response.read())
 
 
 def main(website, json_path):
@@ -72,6 +73,8 @@ def main(website, json_path):
                 dir, filename = determine_path_filename_from(item[1])
                 if '.' not in filename:
                     filename = filename+'index.html'
+                if len(filename) > 128:
+                    filename = filename[:64]
                 print('Pobieranie '+str(current)+' z '+str(max)+':',item[1])
                 download(item[0], item[1], website+'\\'+dir, filename)
 
