@@ -43,7 +43,7 @@ def download(timestamp, url, dir, filename):
     if os.path.exists(os.getcwd()+'\\web\\'+dir+'\\'+filename):
         filename = filename.split('.')[0]+'_'+timestamp+'.'+filename.split('.')[1]
     errors = []
-
+    
     try:
         response = urllib.request.urlopen('http://web.archive.org/web/'+timestamp+'id_/'+url)
     except urllib.error.HTTPError as e:
@@ -70,13 +70,13 @@ def main(website, json_path):
                 continue
             else:
                 current += 1
-                dir, filename = determine_path_filename_from(item[1])
+                dir, filename = determine_path_filename_from(urllib.parse.quote(item[1]))
                 if '.' not in filename:
                     filename = filename+'index.html'
                 if len(filename) > 128:
                     filename = filename[:64]
                 print('Pobieranie '+str(current)+' z '+str(max)+':',item[1])
-                download(item[0], item[1], website+'\\'+dir, filename)
+                download(item[0], urllib.parse.quote(item[1]), website+'\\'+dir, filename)
 
 
 if __name__ == '__main__':
